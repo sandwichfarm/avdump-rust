@@ -3,7 +3,7 @@ name = "avdump3"
 version = "3.2.0"
 edition = "2021"
 description = "AVDump3 — multi-hash and media metadata dumper (Rust port)"
-license = "GPL-2.0-or-later"
+license = "MIT"
 repository = "https://github.com/sandwichfarm/avdump-rust"
 rust-version = "1.80"
 

@@ -86,4 +86,4 @@ only) `ReportName`, `ReportFileExtension`.
 
 ## License
 
-GPL-2.0-or-later, like the original.
+MIT, like the original (see LICENSE).
