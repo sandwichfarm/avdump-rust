@@ -3,8 +3,9 @@
 #   docker build --ssh default -t avdump3 .          (SSH agent forwards the key for mediainfo-rust)
 #   docker run --rm -v "$PWD:/data" avdump3 --Cons=ED2K,CRC32 --PrintHashes /data/video.mkv
 
-FROM --platform=$BUILDPLATFORM rust:1-alpine AS build
-ARG TARGETARCH
+# Built natively on each target platform (buildx runs the arm64 stage under QEMU); rust on Alpine
+# links a static musl binary by default.
+FROM rust:1-alpine AS build
 RUN apk add --no-cache musl-dev git openssh-client \
     && mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
 WORKDIR /src
@@ -14,14 +15,7 @@ COPY src ./src
 COPY tests ./tests
 # The mediainfo-rust dependency is fetched from a private git repository over SSH.
 RUN --mount=type=ssh cargo fetch --locked
-RUN case "$TARGETARCH" in \
-      amd64) target=x86_64-unknown-linux-musl ;; \
-      arm64) target=aarch64-unknown-linux-musl ;; \
-      *) echo "unsupported TARGETARCH $TARGETARCH" && exit 1 ;; \
-    esac \
-    && rustup target add "$target" \
-    && cargo build --release --locked --offline --target "$target" \
-    && cp "target/$target/release/avdump3" /avdump3
+RUN cargo build --release --locked --offline && cp target/release/avdump3 /avdump3
 
 FROM scratch
 COPY --from=build /avdump3 /avdump3
