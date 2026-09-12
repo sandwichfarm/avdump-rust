@@ -19,15 +19,6 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
-      # The mediainfo-rust dependency is a private git repository fetched over SSH: add a read-only
-      # deploy key of that repository as the MEDIAINFO_RUST_DEPLOY_KEY secret. Not needed once the
-      # dependency comes from crates.io (or the repository is public).
-      - uses: webfactory/ssh-agent@v0.9.0
-        if: env.HAS_KEY == 'true'
-        env:
-          HAS_KEY: ${{ secrets.MEDIAINFO_RUST_DEPLOY_KEY != '' }}
-        with:
-          ssh-private-key: ${{ secrets.MEDIAINFO_RUST_DEPLOY_KEY }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --all-targets
@@ -38,12 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: webfactory/ssh-agent@v0.9.0
-        if: env.HAS_KEY == 'true'
-        env:
-          HAS_KEY: ${{ secrets.MEDIAINFO_RUST_DEPLOY_KEY != '' }}
-        with:
-          ssh-private-key: ${{ secrets.MEDIAINFO_RUST_DEPLOY_KEY }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy

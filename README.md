@@ -44,12 +44,11 @@ native hash library and MediaInfoLib 20.08. `scripts/bench.sh` reproduces the ta
 ```
 cargo build --release          # target/release/avdumpr
 cargo test --release
-docker build --ssh default -t avdumpr .   # needs SSH read access to mediainfo-rust (private)
+docker build -t avdumpr .
 ```
 
-`mediainfo-rust` is a git dependency pinned by revision (fetched over SSH, see `.cargo/config.toml`).
 Releases: push a `vX.Y.Z` tag — CI publishes to crates.io, GHCR and the releases page.
-Secrets (`CARGO_REGISTRY_TOKEN`, `MEDIAINFO_RUST_DEPLOY_KEY`): run `scripts/setup-secrets.sh`.
+Secrets (`CARGO_REGISTRY_TOKEN`): run `scripts/setup-secrets.sh`.
 
 ## Command line
 
@@ -99,6 +98,10 @@ only) `ReportName`, `ReportFileExtension`.
 * The live progress display is disabled automatically when stdout is not a terminal.
 * Exit codes: `0` success/informational, `1` configuration or processing error, `2` argument parse
   error, `130` cancelled with Ctrl+C.
+
+## License
+
+MIT, like the original (see LICENSE).
 
 ## License
 

@@ -306,7 +306,8 @@ dependencies = [
 [[package]]
 name = "mediainfo-rust"
 version = "0.1.0"
-source = "git+ssh://git@github.com/sandwichfarm/mediainfo-rust.git?rev=9fbe1cee5cea74dfda7815f6c61642b52336fbc6#9fbe1cee5cea74dfda7815f6c61642b52336fbc6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "370a8ddf4ef1e69553c333167c8cf0780ee92bd0b34d76cdd09815ce33f6c6d8"
 
 [[package]]
 name = "memchr"
