@@ -128,3 +128,5 @@ tests, publishes `avdump3` to crates.io (`CARGO_REGISTRY_TOKEN` secret) and atta
 Windows binaries to the GitHub release. `cargo publish` uses the crates.io release of `mediainfo-rust`
 pinned in `Cargo.toml`, so that crate has to be published first. CI needs read access to the
 mediainfo-rust repository while it is private (`MEDIAINFO_RUST_DEPLOY_KEY` secret).
+`scripts/setup-secrets.sh` prompts for both secrets and sets them with `gh` (it can also generate the
+deploy key pair and register it on the mediainfo-rust repository).
