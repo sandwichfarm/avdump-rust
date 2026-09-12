@@ -109,10 +109,6 @@ MIT, like the original (see LICENSE).
 
 ## Releasing
 
-Tag the commit as `vX.Y.Z` (matching `Cargo.toml`) and push the tag: the `Release` workflow runs the
-tests, publishes `avdumpr` to crates.io (`CARGO_REGISTRY_TOKEN` secret) and attaches Linux, macOS and
-Windows binaries to the GitHub release. `cargo publish` uses the crates.io release of `mediainfo-rust`
-pinned in `Cargo.toml`, so that crate has to be published first. CI needs read access to the
-mediainfo-rust repository while it is private (`MEDIAINFO_RUST_DEPLOY_KEY` secret).
-`scripts/setup-secrets.sh` prompts for both secrets and sets them with `gh` (it can also generate the
-deploy key pair and register it on the mediainfo-rust repository).
+Tag the commit as `vX.Y.Z` (matching `Cargo.toml`) and push the tag: CI runs the tests, publishes
+`avdumpr` to crates.io (`CARGO_REGISTRY_TOKEN` secret, set with `scripts/setup-secrets.sh`) and attaches
+Linux, macOS and Windows binaries and the GHCR image to the release.
