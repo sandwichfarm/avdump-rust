@@ -22,18 +22,17 @@ cargo build --release          # binary: target/release/avdump3
 cargo test --release           # unit + end-to-end tests
 ```
 
-No native build steps: all hash algorithms are pure Rust (RustCrypto + crc32fast/crc32c) and the
-mirrored buffer uses `memfd_create`/`mmap` on Linux (shm on other unixes, a copy-on-wrap buffer
-elsewhere).
+No native build steps and no runtime dependencies: all hash algorithms are pure Rust (RustCrypto +
+crc32fast/crc32c), media metadata comes from the pure-Rust `mediainfo` crate, and the mirrored buffer
+uses `memfd_create`/`mmap` on Linux (shm on other unixes, a copy-on-wrap buffer elsewhere).
 
 ### MediaInfo
 
-The `MediaInfoLibProvider` and the `MediaInfoXml` report use [MediaInfoLib](https://mediaarea.net/en/MediaInfo)
-when it can be found at runtime (`libmediainfo.so.0` on the library path, a `MediaInfo-linux-x64.so`
-next to the binary as shipped with the C# release, or the path in `$AVD3_MEDIAINFO`). Without it the
-program still runs; `--Version` reports `MediaInfoLib: not available`.
-
-On Arch: `sudo pacman -S libmediainfo`.
+The `MediaInfoLibProvider` and the `MediaInfoXml` report are backed by
+[mediainfo-rust](https://github.com/sandwichfarm/mediainfo-rust), a pure-Rust reimplementation of
+MediaInfoLib compiled into the binary. Nothing has to be installed at runtime and `--Version` reports
+the embedded version. The provider reads the same field names as before (`Format`, `Width`,
+`FrameRate`, `Chapters_Pos_Begin`, …), so reports keep their shape.
 
 ## Command line
 
