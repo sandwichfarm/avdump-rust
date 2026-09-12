@@ -97,7 +97,7 @@ impl MirroredBuffer {
 
     #[cfg(target_os = "linux")]
     unsafe fn create_shared_fd(len: usize) -> io::Result<libc::c_int> {
-        let name = b"avdump3-mirror\0";
+        let name = b"avdumpr-mirror\0";
         let fd = libc::memfd_create(name.as_ptr() as *const libc::c_char, libc::MFD_CLOEXEC);
         if fd < 0 {
             return Err(io::Error::last_os_error());

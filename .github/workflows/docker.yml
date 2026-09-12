@@ -1,8 +1,8 @@
 name: Docker
 
 # Builds the multi-arch image and pushes it to GitHub Container Registry:
-#   ghcr.io/<owner>/avdump3:latest      (every push to main)
-#   ghcr.io/<owner>/avdump3:X.Y.Z, X.Y  (release tags vX.Y.Z)
+#   ghcr.io/<owner>/avdumpr:latest      (every push to main)
+#   ghcr.io/<owner>/avdumpr:X.Y.Z, X.Y  (release tags vX.Y.Z)
 # Pull requests only build (no push). The build fetches the private mediainfo-rust dependency over
 # SSH, so the MEDIAINFO_RUST_DEPLOY_KEY secret (read-only deploy key of that repository) is required
 # while that repository is private.
@@ -14,7 +14,7 @@ on:
   pull_request:
 
 env:
-  IMAGE: ghcr.io/${{ github.repository_owner }}/avdump3
+  IMAGE: ghcr.io/${{ github.repository_owner }}/avdumpr
 
 jobs:
   docker:
@@ -45,7 +45,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,enable=${{ github.event_name == 'pull_request' }}
           labels: |
-            org.opencontainers.image.title=avdump3
+            org.opencontainers.image.title=avdumpr
             org.opencontainers.image.description=AVDump3 — multi-hash and media metadata dumper (Rust port)
             org.opencontainers.image.licenses=MIT
       - uses: docker/build-push-action@v6

@@ -80,16 +80,16 @@ jobs:
       - name: Package
         shell: bash
         run: |
-          name=avdump3-${GITHUB_REF_NAME}-${{ matrix.target }}
+          name=avdumpr-${GITHUB_REF_NAME}-${{ matrix.target }}
           mkdir "$name"
           if [ "${{ matrix.archive }}" = zip ]; then
-            cp target/${{ matrix.target }}/release/avdump3.exe README.md LICENSE "$name"/
+            cp target/${{ matrix.target }}/release/avdumpr.exe README.md LICENSE "$name"/
             7z a "$name.zip" "$name"
           else
-            cp target/${{ matrix.target }}/release/avdump3 README.md LICENSE "$name"/
+            cp target/${{ matrix.target }}/release/avdumpr README.md LICENSE "$name"/
             tar czf "$name.tar.gz" "$name"
           fi
       - uses: softprops/action-gh-release@v2
         with:
-          files: avdump3-*.${{ matrix.archive }}
+          files: avdumpr-*.${{ matrix.archive }}
           generate_release_notes: true

@@ -101,16 +101,16 @@ pub fn render(style: &Style, topic: &str, detailed: bool) -> String {
         let _ = writeln!(out, "{}", style.title(&format!("╰{}╯", "─".repeat(inner))));
         out.push('\n');
         let _ = writeln!(out, "{}", style.title("USAGE"));
-        let _ = writeln!(out, "  avdump3 [--Option[=Value]]... <file or directory>...");
-        let _ = writeln!(out, "  avdump3 FROMFILE <arguments.txt> [--Option...]");
-        let _ = writeln!(out, "  avdump3 --Help[=<NameSpace>]");
+        let _ = writeln!(out, "  avdumpr [--Option[=Value]]... <file or directory>...");
+        let _ = writeln!(out, "  avdumpr FROMFILE <arguments.txt> [--Option...]");
+        let _ = writeln!(out, "  avdumpr --Help[=<NameSpace>]");
         out.push('\n');
         let _ = writeln!(out, "{}", style.title("EXAMPLES"));
         let examples = [
-            ("avdump3 --Consumers=ED2K,CRC32 --PrintHashes video.mkv", "hash a single file and print the digests"),
-            ("avdump3 -R --Cons=ED2K,MKV --Reports=AVD3 --RDir=out /media", "recurse, parse Matroska structure, write XML reports"),
-            ("avdump3 --Consumers", "list the available consumers"),
-            ("avdump3 --NullStreamTest=4:1024:2 --Cons=SHA1,TTH", "benchmark hashing speed without disk I/O"),
+            ("avdumpr --Consumers=ED2K,CRC32 --PrintHashes video.mkv", "hash a single file and print the digests"),
+            ("avdumpr -R --Cons=ED2K,MKV --Reports=AVD3 --RDir=out /media", "recurse, parse Matroska structure, write XML reports"),
+            ("avdumpr --Consumers", "list the available consumers"),
+            ("avdumpr --NullStreamTest=4:1024:2 --Cons=SHA1,TTH", "benchmark hashing speed without disk I/O"),
         ];
         let ex_pad = examples.iter().map(|(c, _)| c.chars().count()).max().unwrap_or(0);
         for (cmd, what) in examples {

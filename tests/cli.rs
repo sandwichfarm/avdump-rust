@@ -1,17 +1,17 @@
-//! End-to-end tests running the `avdump3` binary.
+//! End-to-end tests running the `avdumpr` binary.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 fn bin() -> Command {
-    let mut c = Command::new(env!("CARGO_BIN_EXE_avdump3"));
+    let mut c = Command::new(env!("CARGO_BIN_EXE_avdumpr"));
     c.env("NO_COLOR", "1");
     c
 }
 
 fn run(args: &[&str]) -> Output {
-    bin().args(args).output().expect("run avdump3")
+    bin().args(args).output().expect("run avdumpr")
 }
 
 fn stdout(o: &Output) -> String {
@@ -19,7 +19,7 @@ fn stdout(o: &Output) -> String {
 }
 
 fn tmpdir(name: &str) -> PathBuf {
-    let d = std::env::temp_dir().join(format!("avdump3-test-{}-{}", name, std::process::id()));
+    let d = std::env::temp_dir().join(format!("avdumpr-test-{}-{}", name, std::process::id()));
     let _ = fs::remove_dir_all(&d);
     fs::create_dir_all(&d).unwrap();
     d

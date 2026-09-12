@@ -3,14 +3,14 @@
 Rust port of [AVDump3](https://github.com/DvdKhl/AVDump3) (`AVDump3CL` + `AVDump3Lib`): reads each
 file once and feeds it to parallel hash consumers (ED2K, CRC32, MD5, SHA-1/2/3, Tiger, TTH, …) and
 container parsers (Matroska, MP4, Ogg), then writes metadata reports and can move/rename files.
-Same command line, argument names and output formats as the original; the binary is still called `avdump3`. Media metadata comes from
+Same command line, argument names and output formats as the original; the binary is `avdumpr`. Media metadata comes from
 [mediainfo-rust](https://github.com/sandwichfarm/mediainfo-rust), compiled in — no native libraries.
 
 ## Install
 
 ```
 cargo install avdumpr                                        # crates.io
-docker run --rm -v "$PWD:/data" ghcr.io/sandwichfarm/avdump3 --Cons=ED2K,CRC32 --PrintHashes video.mkv
+docker run --rm -v "$PWD:/data" ghcr.io/sandwichfarm/avdumpr --Cons=ED2K,CRC32 --PrintHashes video.mkv
 ```
 
 Prebuilt binaries (Linux, macOS, Windows) are on the [releases page](https://github.com/sandwichfarm/avdump-rust/releases).
@@ -20,10 +20,10 @@ Docker: `/data` is the working directory; mount `:ro` unless you write reports/l
 ## Use
 
 ```
-avdump3 --Consumers=ED2K,CRC32 --PrintHashes video.mkv
-avdump3 -R --Cons=ED2K,MKV --Reports=AVD3 --RDir=out /media
-avdump3 --Consumers            # list consumers
-avdump3 --Help                 # full help; --Help=<NameSpace> for one namespace
+avdumpr --Consumers=ED2K,CRC32 --PrintHashes video.mkv
+avdumpr -R --Cons=ED2K,MKV --Reports=AVD3 --RDir=out /media
+avdumpr --Consumers            # list consumers
+avdumpr --Help                 # full help; --Help=<NameSpace> for one namespace
 ```
 
 ## Benchmark
@@ -42,9 +42,9 @@ native hash library and MediaInfoLib 20.08. `scripts/bench.sh` reproduces the ta
 ## Develop
 
 ```
-cargo build --release          # target/release/avdump3
+cargo build --release          # target/release/avdumpr
 cargo test --release
-docker build --ssh default -t avdump3 .   # needs SSH read access to mediainfo-rust (private)
+docker build --ssh default -t avdumpr .   # needs SSH read access to mediainfo-rust (private)
 ```
 
 `mediainfo-rust` is a git dependency pinned by revision (fetched over SSH, see `.cargo/config.toml`).
@@ -66,7 +66,7 @@ arguments from a file (one per line, `//` comments). `PRINTARGS` echoes the pars
 | Diagnostics | `--Version`, `--SaveErrors`, `--SkipEnvironmentElement`, `--IncludePersonalData`, `--PrintDiscoveredFiles`, `--ErrorDirectory`, `--NullStreamTest` |
 | Display | `--HideBuffers`, `--HideFileProgress`, `--HideTotalProgress`, `--ShowDisplayJitter`, `--ForwardConsoleCursorOnly` |
 
-Run `avdump3 --Help` for descriptions, examples and defaults.
+Run `avdumpr --Help` for descriptions, examples and defaults.
 
 ### Consumers
 

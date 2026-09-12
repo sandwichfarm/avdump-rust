@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Times avdump3 (this port) against the original C# AVDump3CL on the given files, median of N runs,
+# Times avdumpr (this port) against the original C# AVDump3CL on the given files, median of N runs,
 # warm cache. Both run the same consumers and write the same AVD3 report.
 #   scripts/bench.sh /path/to/AVDump3CL-build-dir file...
 # The C# build dir must contain AVDump3CL.dll, AVDump3NativeLib.so and MediaInfo.so; needs `dotnet`.
 set -euo pipefail
 csdir=$1; shift
 here=$(cd "$(dirname "$0")/.." && pwd)
-rust="$here/target/release/avdump3"
+rust="$here/target/release/avdumpr"
 N=${N:-5}
 CONS=${CONS:-ED2K,CRC32,MD5,SHA1,TTH,MKV,MP4}
 out=$(mktemp -d); trap 'rm -rf "$out"' EXIT
