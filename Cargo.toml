@@ -1,6 +1,6 @@
 [package]
 name = "avdumpr"
-version = "3.2.0"
+version = "0.1.0"
 edition = "2021"
 description = "AVDumpR — Rust port of AVDump3: hashes (ED2K, CRC32, SHA, TTH, …) and media metadata reports in one pass, no native dependencies"
 license = "MIT"
