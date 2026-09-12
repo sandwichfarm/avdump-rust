@@ -1,0 +1,3 @@
+# The mediainfo-rust repository is fetched over SSH with the system git (credentials/agent).
+[net]
+git-fetch-with-cli = true

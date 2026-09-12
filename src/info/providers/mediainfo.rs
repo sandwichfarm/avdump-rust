@@ -1,12 +1,10 @@
-//! MediaInfoLib binding (loaded dynamically; optional at runtime) and the provider built on it.
+//! MediaInfo binding (the pure-Rust `mediainfo` crate, compiled in) and the provider built on it.
 
 use crate::info::meta::{container_types as ct, keys, MetaInfoContainer, MetaProvider};
 use crate::info::value::*;
 use crate::misc::xml::XElement;
-use libloading::{Library, Symbol};
-use std::ffi::{c_char, c_void, CStr, CString};
+use mediainfo::{InfoKind as MiInfoKind, StreamKind as MiStreamKind};
 use std::path::Path;
-use std::sync::OnceLock;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(usize)]
@@ -33,6 +31,9 @@ impl StreamKind {
             Self::Menu => "Menu",
         }
     }
+    fn mi(self) -> MiStreamKind {
+        MiStreamKind::from_usize(self as usize).unwrap_or(MiStreamKind::General)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,227 +49,41 @@ pub enum InfoKind {
     HowTo = 7,
 }
 
-type NewFn = unsafe extern "C" fn() -> *mut c_void;
-type DeleteFn = unsafe extern "C" fn(*mut c_void);
-type OpenFn = unsafe extern "C" fn(*mut c_void, *const c_void) -> usize;
-type CloseFn = unsafe extern "C" fn(*mut c_void);
-type InformFn = unsafe extern "C" fn(*mut c_void, usize) -> *const c_void;
-type GetIFn = unsafe extern "C" fn(*mut c_void, usize, usize, usize, usize) -> *const c_void;
-type GetFn = unsafe extern "C" fn(*mut c_void, usize, usize, *const c_void, usize, usize) -> *const c_void;
-type OptionFn = unsafe extern "C" fn(*mut c_void, *const c_void, *const c_void) -> *const c_void;
-type CountGetFn = unsafe extern "C" fn(*mut c_void, usize, usize) -> usize;
-
-/// String encoding expected by the loaded entry points.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Charset {
-    /// `MediaInfo_*`: `wchar_t` strings (UTF-32 on unix, UTF-16 on Windows).
-    Wide,
-    /// `MediaInfoA_*`: 8-bit strings (configured to UTF-8).
-    Ansi,
-}
-
-struct Api {
-    _lib: Library,
-    charset: Charset,
-    new: NewFn,
-    delete: DeleteFn,
-    open: OpenFn,
-    close: CloseFn,
-    inform: InformFn,
-    get_i: GetIFn,
-    get: GetFn,
-    option: OptionFn,
-    count_get: CountGetFn,
-}
-
-unsafe impl Send for Api {}
-unsafe impl Sync for Api {}
-
-static API: OnceLock<Option<Api>> = OnceLock::new();
-
-fn candidate_paths() -> Vec<String> {
-    let mut v = Vec::new();
-    if let Ok(p) = std::env::var("AVD3_MEDIAINFO") {
-        v.push(p);
+impl InfoKind {
+    fn mi(self) -> MiInfoKind {
+        MiInfoKind::from_usize(self as usize).unwrap_or(MiInfoKind::Text)
     }
-    let exe_dir = std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.to_path_buf()));
-    let names: &[&str] = if cfg!(target_os = "windows") {
-        &["MediaInfo-windows-x64.dll", "MediaInfo.dll"]
-    } else if cfg!(target_os = "macos") {
-        &["libmediainfo.dylib", "libmediainfo.0.dylib", "MediaInfo-macos-x64.dylib", "MediaInfo-macos-arm64.dylib"]
-    } else if cfg!(target_arch = "aarch64") {
-        &["MediaInfo-linux-arm64.so", "MediaInfo-linux-arm64-musl.so", "libmediainfo.so.0", "libmediainfo.so"]
-    } else {
-        &["MediaInfo-linux-x64.so", "MediaInfo-linux-x64-musl.so", "libmediainfo.so.0", "libmediainfo.so"]
-    };
-    if let Some(dir) = &exe_dir {
-        for n in names {
-            v.push(dir.join(n).to_string_lossy().into_owned());
-        }
-    }
-    for n in names {
-        v.push(n.to_string());
-    }
-    v
 }
 
-unsafe fn load_symbols(lib: Library, prefix: &str, charset: Charset) -> Result<Api, Library> {
-    let sym = |name: &str| -> Option<*const c_void> {
-        let full = format!("{prefix}{name}\0");
-        let s: Result<Symbol<*const c_void>, _> = lib.get(full.as_bytes());
-        s.ok().map(|s| *s)
-    };
-    let all = [sym("New"), sym("Delete"), sym("Open"), sym("Close"), sym("Inform"), sym("GetI"), sym("Get"), sym("Option"), sym("Count_Get")];
-    if all.iter().any(|p| p.is_none()) {
-        return Err(lib);
-    }
-    let p = |i: usize| all[i].unwrap();
-    Ok(Api {
-        charset,
-        new: std::mem::transmute::<*const c_void, NewFn>(p(0)),
-        delete: std::mem::transmute::<*const c_void, DeleteFn>(p(1)),
-        open: std::mem::transmute::<*const c_void, OpenFn>(p(2)),
-        close: std::mem::transmute::<*const c_void, CloseFn>(p(3)),
-        inform: std::mem::transmute::<*const c_void, InformFn>(p(4)),
-        get_i: std::mem::transmute::<*const c_void, GetIFn>(p(5)),
-        get: std::mem::transmute::<*const c_void, GetFn>(p(6)),
-        option: std::mem::transmute::<*const c_void, OptionFn>(p(7)),
-        count_get: std::mem::transmute::<*const c_void, CountGetFn>(p(8)),
-        _lib: lib,
-    })
-}
-
-fn load_api() -> Option<Api> {
-    for path in candidate_paths() {
-        // SAFETY: loading MediaInfo runs its static initialisers, which is what the C# host does too.
-        let lib = match unsafe { Library::new(&path) } {
-            Ok(l) => l,
-            Err(_) => continue,
-        };
-        // Prefer the wide-character API (always exported), fall back to the 8-bit one.
-        let lib = match unsafe { load_symbols(lib, "MediaInfo_", Charset::Wide) } {
-            Ok(api) => return Some(api),
-            Err(lib) => lib,
-        };
-        if let Ok(api) = unsafe { load_symbols(lib, "MediaInfoA_", Charset::Ansi) } {
-            return Some(api);
-        }
-    }
-    None
-}
-
-fn api() -> Option<&'static Api> {
-    API.get_or_init(load_api).as_ref()
-}
-
-/// Whether a MediaInfo library could be loaded.
+/// The MediaInfo implementation is compiled in (pure Rust); it is always available.
 pub fn is_available() -> bool {
-    api().is_some()
+    true
 }
 
-/// Owned, null-terminated string in the library's charset.
-enum NativeString {
-    Ansi(CString),
-    Utf16(Vec<u16>),
-    Utf32(Vec<u32>),
-}
-
-impl NativeString {
-    fn new(s: &str, charset: Charset) -> Self {
-        match charset {
-            Charset::Ansi => Self::Ansi(CString::new(s.replace('\0', "")).unwrap_or_default()),
-            Charset::Wide if cfg!(windows) => Self::Utf16(s.encode_utf16().chain(std::iter::once(0)).collect()),
-            Charset::Wide => Self::Utf32(s.chars().map(|c| c as u32).chain(std::iter::once(0)).collect()),
-        }
-    }
-    fn as_ptr(&self) -> *const c_void {
-        match self {
-            Self::Ansi(c) => c.as_ptr() as *const c_void,
-            Self::Utf16(v) => v.as_ptr() as *const c_void,
-            Self::Utf32(v) => v.as_ptr() as *const c_void,
-        }
-    }
-}
-
-fn native_to_string(ptr: *const c_void, charset: Charset) -> String {
-    if ptr.is_null() {
-        return String::new();
-    }
-    unsafe {
-        match charset {
-            Charset::Ansi => CStr::from_ptr(ptr as *const c_char).to_string_lossy().into_owned(),
-            Charset::Wide if cfg!(windows) => {
-                let p = ptr as *const u16;
-                let mut len = 0;
-                while *p.add(len) != 0 {
-                    len += 1;
-                }
-                String::from_utf16_lossy(std::slice::from_raw_parts(p, len))
-            }
-            Charset::Wide => {
-                let p = ptr as *const u32;
-                let mut len = 0;
-                while *p.add(len) != 0 {
-                    len += 1;
-                }
-                std::slice::from_raw_parts(p, len).iter().map(|&c| char::from_u32(c).unwrap_or('\u{FFFD}')).collect()
-            }
-        }
-    }
-}
-
-/// Handle to one MediaInfo instance.
+/// Handle to one MediaInfo instance (the pure-Rust `mediainfo` crate).
 pub struct MediaInfo {
-    handle: *mut c_void,
-    api: &'static Api,
+    inner: mediainfo::MediaInfo,
 }
-
-// SAFETY: MediaInfoLib handles are independent; each is only used from the thread owning it.
-unsafe impl Send for MediaInfo {}
 
 impl MediaInfo {
     pub fn new() -> Option<Self> {
-        let api = api()?;
-        let handle = unsafe { (api.new)() };
-        if handle.is_null() {
-            return None;
-        }
-        let mi = Self { handle, api };
-        if api.charset == Charset::Ansi {
-            mi.option("CharSet", "UTF-8");
-        }
-        if !cfg!(windows) {
-            mi.option("setlocale_LC_CTYPE", "");
-            mi.option("FileTestContinuousFileNames", "0");
-        }
-        Some(mi)
+        Some(Self { inner: mediainfo::MediaInfo::new() })
     }
 
-    fn s(&self, text: &str) -> NativeString {
-        NativeString::new(text, self.api.charset)
+    pub fn open(&mut self, path: &Path) -> bool {
+        self.inner.open(path)
     }
 
-    fn out(&self, ptr: *const c_void) -> String {
-        native_to_string(ptr, self.api.charset)
-    }
-
-    pub fn open(&self, path: &Path) -> bool {
-        let p = self.s(&path.to_string_lossy());
-        unsafe { (self.api.open)(self.handle, p.as_ptr()) == 1 }
-    }
-
-    pub fn close(&self) {
-        unsafe { (self.api.close)(self.handle) }
+    pub fn close(&mut self) {
+        self.inner.close()
     }
 
     pub fn inform(&self) -> String {
-        self.out(unsafe { (self.api.inform)(self.handle, 0) })
+        self.inner.inform()
     }
 
-    pub fn option(&self, option: &str, value: &str) -> String {
-        let o = self.s(option);
-        let v = self.s(value);
-        self.out(unsafe { (self.api.option)(self.handle, o.as_ptr(), v.as_ptr()) })
+    pub fn option(&mut self, option: &str, value: &str) -> String {
+        self.inner.option(option, value)
     }
 
     pub fn get(&self, parameter: &str, kind: StreamKind, index: usize) -> String {
@@ -276,28 +91,21 @@ impl MediaInfo {
     }
 
     pub fn get_kind(&self, parameter: &str, kind: StreamKind, index: usize, info: InfoKind) -> String {
-        let p = self.s(parameter);
-        self.out(unsafe { (self.api.get)(self.handle, kind as usize, index, p.as_ptr(), info as usize, InfoKind::Name as usize) })
+        self.inner.get(kind.mi(), index, parameter, info.mi())
     }
 
     pub fn get_i(&self, parameter: usize, kind: StreamKind, index: usize, info: InfoKind) -> String {
-        self.out(unsafe { (self.api.get_i)(self.handle, kind as usize, index, parameter, info as usize) })
+        self.inner.get_i(kind.mi(), index, parameter, info.mi())
     }
 
     pub fn count(&self, kind: StreamKind, index: Option<usize>) -> usize {
-        unsafe { (self.api.count_get)(self.handle, kind as usize, index.unwrap_or(usize::MAX)) }
-    }
-}
-
-impl Drop for MediaInfo {
-    fn drop(&mut self) {
-        unsafe { (self.api.delete)(self.handle) }
+        self.inner.count_get(kind.mi(), index)
     }
 }
 
 /// Version string reported by the library (`Info_Version`).
 pub fn version() -> Option<String> {
-    let mi = MediaInfo::new()?;
+    let mut mi = MediaInfo::new()?;
     Some(mi.option("Info_Version", ""))
 }
 
@@ -331,7 +139,7 @@ impl MediaInfoLibProvider {
     pub const NAME: &'static str = "MediaInfoLibProvider";
 
     pub fn create(path: &Path) -> Option<MetaProvider> {
-        let mi = MediaInfo::new()?;
+        let mut mi = MediaInfo::new()?;
         let mut p = MetaProvider::new(Self::NAME, ct::MEDIA_PROVIDER);
         if !path.is_file() {
             return Some(p);
@@ -606,7 +414,7 @@ fn parse_timestamp_ns(s: &str) -> Option<u64> {
 /// Raw MediaInfo dump as XML (`MediaInfoXml` report).
 pub fn xml_report(path: &Path) -> XElement {
     let mut root = XElement::new("File");
-    let mi = match MediaInfo::new() {
+    let mut mi = match MediaInfo::new() {
         Some(mi) => mi,
         None => {
             root.add(XElement::with_text("Error", "MediaInfo library not available"));

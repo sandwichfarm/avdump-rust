@@ -22,7 +22,7 @@ digest = "0.10"
 crc32fast = "1.4"
 crc32c = "0.6"
 regex = "1.10"
-libloading = "0.8"
+mediainfo = { package = "mediainfo-rust", git = "ssh://git@github.com/sandwichfarm/mediainfo-rust.git", rev = "9fbe1cee5cea74dfda7815f6c61642b52336fbc6" }
 libc = "0.2"
 crossterm = "0.29"
 ctrlc = { version = "3.4", features = ["termination"] }
