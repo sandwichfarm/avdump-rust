@@ -34,6 +34,10 @@ MediaInfoLib compiled into the binary. Nothing has to be installed at runtime an
 the embedded version. The provider reads the same field names as before (`Format`, `Width`,
 `FrameRate`, `Chapters_Pos_Begin`, …), so reports keep their shape.
 
+The crate is a git dependency pinned to a revision (`Cargo.toml`); it is fetched over SSH with the
+system `git` (`.cargo/config.toml` sets `net.git-fetch-with-cli`), so building needs read access to
+that repository.
+
 ## Command line
 
 Arguments are `--Name`, `--Name=Value`, `--NameSpace.Name=Value`, `-X` (single-letter aliases) or
