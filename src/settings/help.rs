@@ -133,7 +133,7 @@ pub fn render(style: &Style, topic: &str, detailed: bool) -> String {
         for p in props {
             let names = p.names_display();
             let pad = " ".repeat(name_pad.saturating_sub(names.chars().count()));
-            let _ = writeln!(out, "  {}{}  {}  {}", style.arg(&names), pad, style.example(p.example), format!("({})", default_display(style, p)));
+            let _ = writeln!(out, "  {}{}  {}  ({})", style.arg(&names), pad, style.example(p.example), default_display(style, p));
             if detailed && !p.description.is_empty() {
                 let indent = "      ";
                 for line in wrap_text(p.description, width.saturating_sub(indent.len() + 2)) {

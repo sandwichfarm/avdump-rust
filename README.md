@@ -90,3 +90,11 @@ only) `ReportName`, `ReportFileExtension`.
 ## License
 
 MIT, like the original (see LICENSE).
+
+## Releasing
+
+Tag the commit as `vX.Y.Z` (matching `Cargo.toml`) and push the tag: the `Release` workflow runs the
+tests, publishes `avdump3` to crates.io (`CARGO_REGISTRY_TOKEN` secret) and attaches Linux, macOS and
+Windows binaries to the GitHub release. `cargo publish` uses the crates.io release of `mediainfo-rust`
+pinned in `Cargo.toml`, so that crate has to be published first. CI needs read access to the
+mediainfo-rust repository while it is private (`MEDIAINFO_RUST_DEPLOY_KEY` secret).

@@ -78,6 +78,7 @@ impl<'r, 'a> EbmlReader<'r, 'a> {
 
     /// Advance to the next element within the current master element. Returns `None` at the end
     /// of the parent element (or of the stream).
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Result<Option<ElementHeader>, ProcessingError> {
         self.finish_current()?;
         let frame_end = self.frames.last().and_then(|f| f.end);
@@ -283,6 +284,6 @@ mod tests {
         assert_eq!(read_vint_value(&[0x81]), (1, false));
         assert_eq!(read_vint_value(&[0x40, 0x02]), (2, false));
         assert_eq!(read_vint_value(&[0xFF]), (127, true));
-        assert_eq!(read_vint_value(&[0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]).1, true);
+        assert!(read_vint_value(&[0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]).1);
     }
 }
