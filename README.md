@@ -26,6 +26,19 @@ avdump3 --Consumers            # list consumers
 avdump3 --Help                 # full help; --Help=<NameSpace> for one namespace
 ```
 
+## Benchmark
+
+Wall-clock per file for `--Cons=ED2K,CRC32,MD5,SHA1,TTH,MKV,MP4 --Reports=AVD3`, median of 5
+warm-cache runs, i7-11700K (8 cores), Linux. The original is AVDump3CL built for .NET 8 with its
+native hash library and MediaInfoLib 20.08. `scripts/bench.sh` reproduces the table.
+
+| File | Size | AVDump3 (C#, .NET 8) | avdumpr | Speed-up |
+|---|---|---|---|---|
+| HandBrake MKV (AVC + AAC) | 34 MB | 1299 ms | 559 ms | 2.3× |
+| 2 min 720p MKV (AVC + AAC) | 122 MB | 1716 ms | 748 ms | 2.3× |
+| MP4 (AVC + AAC) | 75 MB | 1142 ms | 511 ms | 2.2× |
+| Random data (hashing only) | 1 GiB | 2343 ms | 1892 ms | 1.2× |
+
 ## Develop
 
 ```
