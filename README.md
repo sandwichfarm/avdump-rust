@@ -38,6 +38,36 @@ The crate is a git dependency pinned to a revision (`Cargo.toml`); it is fetched
 system `git` (`.cargo/config.toml` sets `net.git-fetch-with-cli`), so building needs read access to
 that repository.
 
+## Docker
+
+A multi-arch (amd64/arm64) image is published to GitHub Container Registry: a single static binary
+on `scratch` (about 6 MB), no shell, no libraries.
+
+```
+docker pull ghcr.io/sandwichfarm/avdump3:latest          # or :3.2.0, :3.2
+docker run --rm -v "$PWD:/data" ghcr.io/sandwichfarm/avdump3 --Cons=ED2K,CRC32 --PrintHashes video.mkv
+docker run --rm -v "$PWD:/data" ghcr.io/sandwichfarm/avdump3 -R --Cons=ED2K,MKV --Reports=AVD3 --RDir=out .
+```
+
+* The working directory in the container is `/data`; mount the directory with your files there and
+  use paths relative to it (or absolute `/data/...` paths). Mount read-only (`:ro`) unless you use
+  reports, logs or `--FileMove`, which write next to the files or into `--RDir`.
+* Files created by the container are owned by root unless you add `--user "$(id -u):$(id -g)"`.
+* The live progress display is disabled automatically when stdout is not a terminal; add `-it` to
+  `docker run` to see it.
+* No arguments prints the help. Everything in the command line section below applies unchanged.
+
+A handy alias:
+
+```
+alias avdump3='docker run --rm -it --user "$(id -u):$(id -g)" -v "$PWD:/data" ghcr.io/sandwichfarm/avdump3'
+```
+
+Building the image yourself needs SSH access to the `mediainfo-rust` repository (the dependency is
+fetched during the build): `docker build --ssh default -t avdump3 .` with the key loaded in your
+agent, or `--ssh default=$HOME/.ssh/<github-key>`. Cross-build with
+`docker buildx build --platform linux/arm64 --ssh default …`.
+
 ## Command line
 
 Arguments are `--Name`, `--Name=Value`, `--NameSpace.Name=Value`, `-X` (single-letter aliases) or
