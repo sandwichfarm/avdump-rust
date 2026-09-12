@@ -1,72 +1,42 @@
 # AVDump3 (Rust port)
 
-A one-shot Rust port of [AVDump3](https://github.com/DvdKhl/AVDump3) (`AVDump3CL` + `AVDump3Lib`).
+Rust port of [AVDump3](https://github.com/DvdKhl/AVDump3) (`AVDump3CL` + `AVDump3Lib`): reads each
+file once and feeds it to parallel hash consumers (ED2K, CRC32, MD5, SHA-1/2/3, Tiger, TTH, …) and
+container parsers (Matroska, MP4, Ogg), then writes metadata reports and can move/rename files.
+Same command line, argument names and output formats as the original. Media metadata comes from
+[mediainfo-rust](https://github.com/sandwichfarm/mediainfo-rust), compiled in — no native libraries.
 
-AVDump3 reads every file **once** into a mirrored circular buffer and feeds the data to any number of
-consumers in parallel — hash algorithms (ED2K, CRC32, MD5, SHA-1/2/3, Keccak, Tiger, TTH, …) and
-container parsers (Matroska, Ogg, MP4) — then emits metadata reports (XML), side logs, and can
-move/rename files based on the results. The command line, namespaces, argument names, aliases and
-output formats mirror the original 1:1.
+## Install
+
+```
+cargo install avdump3                                        # crates.io
+docker run --rm -v "$PWD:/data" ghcr.io/sandwichfarm/avdump3 --Cons=ED2K,CRC32 --PrintHashes video.mkv
+```
+
+Prebuilt binaries (Linux, macOS, Windows) are on the [releases page](https://github.com/sandwichfarm/avdump-rust/releases).
+Docker: `/data` is the working directory; mount `:ro` unless you write reports/logs, add
+`--user "$(id -u):$(id -g)"` to keep file ownership, `-it` for the live progress display.
+
+## Use
 
 ```
 avdump3 --Consumers=ED2K,CRC32 --PrintHashes video.mkv
 avdump3 -R --Cons=ED2K,MKV --Reports=AVD3 --RDir=out /media
 avdump3 --Consumers            # list consumers
-avdump3 --Help                 # full, coloured help; --Help=<NameSpace> for one namespace
+avdump3 --Help                 # full help; --Help=<NameSpace> for one namespace
 ```
 
-## Building
+## Develop
 
 ```
-cargo build --release          # binary: target/release/avdump3
-cargo test --release           # unit + end-to-end tests
+cargo build --release          # target/release/avdump3
+cargo test --release
+docker build --ssh default -t avdump3 .   # needs SSH read access to mediainfo-rust (private)
 ```
 
-No native build steps and no runtime dependencies: all hash algorithms are pure Rust (RustCrypto +
-crc32fast/crc32c), media metadata comes from the pure-Rust `mediainfo` crate, and the mirrored buffer
-uses `memfd_create`/`mmap` on Linux (shm on other unixes, a copy-on-wrap buffer elsewhere).
-
-### MediaInfo
-
-The `MediaInfoLibProvider` and the `MediaInfoXml` report are backed by
-[mediainfo-rust](https://github.com/sandwichfarm/mediainfo-rust), a pure-Rust reimplementation of
-MediaInfoLib compiled into the binary. Nothing has to be installed at runtime and `--Version` reports
-the embedded version. The provider reads the same field names as before (`Format`, `Width`,
-`FrameRate`, `Chapters_Pos_Begin`, …), so reports keep their shape.
-
-The crate is a git dependency pinned to a revision (`Cargo.toml`); it is fetched over SSH with the
-system `git` (`.cargo/config.toml` sets `net.git-fetch-with-cli`), so building needs read access to
-that repository.
-
-## Docker
-
-A multi-arch (amd64/arm64) image is published to GitHub Container Registry: a single static binary
-on `scratch` (about 6 MB), no shell, no libraries.
-
-```
-docker pull ghcr.io/sandwichfarm/avdump3:latest          # or :3.2.0, :3.2
-docker run --rm -v "$PWD:/data" ghcr.io/sandwichfarm/avdump3 --Cons=ED2K,CRC32 --PrintHashes video.mkv
-docker run --rm -v "$PWD:/data" ghcr.io/sandwichfarm/avdump3 -R --Cons=ED2K,MKV --Reports=AVD3 --RDir=out .
-```
-
-* The working directory in the container is `/data`; mount the directory with your files there and
-  use paths relative to it (or absolute `/data/...` paths). Mount read-only (`:ro`) unless you use
-  reports, logs or `--FileMove`, which write next to the files or into `--RDir`.
-* Files created by the container are owned by root unless you add `--user "$(id -u):$(id -g)"`.
-* The live progress display is disabled automatically when stdout is not a terminal; add `-it` to
-  `docker run` to see it.
-* No arguments prints the help. Everything in the command line section below applies unchanged.
-
-A handy alias:
-
-```
-alias avdump3='docker run --rm -it --user "$(id -u):$(id -g)" -v "$PWD:/data" ghcr.io/sandwichfarm/avdump3'
-```
-
-Building the image yourself needs SSH access to the `mediainfo-rust` repository (the dependency is
-fetched during the build): `docker build --ssh default -t avdump3 .` with the key loaded in your
-agent, or `--ssh default=$HOME/.ssh/<github-key>`. Cross-build with
-`docker buildx build --platform linux/arm64 --ssh default …`.
+`mediainfo-rust` is a git dependency pinned by revision (fetched over SSH, see `.cargo/config.toml`).
+Releases: push a `vX.Y.Z` tag — CI publishes to crates.io, GHCR and the releases page.
+Secrets (`CARGO_REGISTRY_TOKEN`, `MEDIAINFO_RUST_DEPLOY_KEY`): run `scripts/setup-secrets.sh`.
 
 ## Command line
 
