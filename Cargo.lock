@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "avdump3"
+name = "avdumpr"
 version = "3.2.0"
 dependencies = [
  "crc32c",

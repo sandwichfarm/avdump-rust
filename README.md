@@ -1,15 +1,15 @@
-# AVDump3 (Rust port)
+# AVDumpR
 
 Rust port of [AVDump3](https://github.com/DvdKhl/AVDump3) (`AVDump3CL` + `AVDump3Lib`): reads each
 file once and feeds it to parallel hash consumers (ED2K, CRC32, MD5, SHA-1/2/3, Tiger, TTH, …) and
 container parsers (Matroska, MP4, Ogg), then writes metadata reports and can move/rename files.
-Same command line, argument names and output formats as the original. Media metadata comes from
+Same command line, argument names and output formats as the original; the binary is still called `avdump3`. Media metadata comes from
 [mediainfo-rust](https://github.com/sandwichfarm/mediainfo-rust), compiled in — no native libraries.
 
 ## Install
 
 ```
-cargo install avdump3                                        # crates.io
+cargo install avdumpr                                        # crates.io
 docker run --rm -v "$PWD:/data" ghcr.io/sandwichfarm/avdump3 --Cons=ED2K,CRC32 --PrintHashes video.mkv
 ```
 
@@ -94,7 +94,7 @@ MIT, like the original (see LICENSE).
 ## Releasing
 
 Tag the commit as `vX.Y.Z` (matching `Cargo.toml`) and push the tag: the `Release` workflow runs the
-tests, publishes `avdump3` to crates.io (`CARGO_REGISTRY_TOKEN` secret) and attaches Linux, macOS and
+tests, publishes `avdumpr` to crates.io (`CARGO_REGISTRY_TOKEN` secret) and attaches Linux, macOS and
 Windows binaries to the GitHub release. `cargo publish` uses the crates.io release of `mediainfo-rust`
 pinned in `Cargo.toml`, so that crate has to be published first. CI needs read access to the
 mediainfo-rust repository while it is private (`MEDIAINFO_RUST_DEPLOY_KEY` secret).
