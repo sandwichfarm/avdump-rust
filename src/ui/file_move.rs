@@ -173,6 +173,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(unix)]
     fn additional_tokens_and_finalize() {
         let f = fmi();
         let mut add = HashMap::new();
@@ -187,6 +188,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(unix)]
     fn inline_script() {
         let mut s = FileMoveScript::new(FileMoveMode::PlaceholderInline, "${DirectoryName}/x${FileExtension}").unwrap();
         assert!(!s.can_reload());

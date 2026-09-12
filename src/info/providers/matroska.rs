@@ -206,7 +206,7 @@ impl MatroskaProvider {
                     p.add_to(&mut s, "OutputSampleRate", keys::HZ, Some(Value::F64(a.output_sampling_frequency())));
                     p.add_to(&mut s, "StatedSampleRate", keys::HZ, Some(Value::F64(a.sampling_frequency())));
                     if let Some(ti) = &track_info {
-                        let ticks = (ti.track_length * 10_000_000.0) as f64;
+                        let ticks = ti.track_length * 10_000_000.0;
                         p.add_to(&mut s, "SampleCount", keys::DIMENSIONLESS, Some(Value::I64(((ticks * a.sampling_frequency()) as i64) / 10_000_000)));
                     }
                 }

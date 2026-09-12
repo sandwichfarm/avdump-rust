@@ -152,9 +152,7 @@ impl BytesReadProgress {
                     p.buffer_fill += produced.saturating_sub(read) as f64 / buffer_length;
                 }
             }
-            if active > 0 {
-                bytes_processed += local_bytes / active;
-            }
+            bytes_processed += local_bytes.checked_div(active).unwrap_or(0);
             file_progress.push(FileProgress {
                 id: *id,
                 file_path: info.file_name.clone(),

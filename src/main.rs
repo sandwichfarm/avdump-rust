@@ -5,6 +5,6 @@ fn main() {
         libc::signal(libc::SIGPIPE, libc::SIG_DFL);
     }
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let code = avdump3::ui::app::run(args);
+    let code = avdumpr::ui::app::run(args);
     std::process::exit(code);
 }

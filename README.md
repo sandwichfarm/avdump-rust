@@ -1,42 +1,55 @@
-# AVDump3 (Rust port)
+# AVDumpR
 
-A one-shot Rust port of [AVDump3](https://github.com/DvdKhl/AVDump3) (`AVDump3CL` + `AVDump3Lib`).
+Rust port of [AVDump3](https://github.com/DvdKhl/AVDump3) (`AVDump3CL` + `AVDump3Lib`): reads each
+file once and feeds it to parallel hash consumers (ED2K, CRC32, MD5, SHA-1/2/3, Tiger, TTH, …) and
+container parsers (Matroska, MP4, Ogg), then writes metadata reports and can move/rename files.
+Same command line, argument names and output formats as the original; the binary is `avdumpr`. Media metadata comes from
+[mediainfo-rust](https://github.com/sandwichfarm/mediainfo-rust), compiled in — no native libraries.
 
-AVDump3 reads every file **once** into a mirrored circular buffer and feeds the data to any number of
-consumers in parallel — hash algorithms (ED2K, CRC32, MD5, SHA-1/2/3, Keccak, Tiger, TTH, …) and
-container parsers (Matroska, Ogg, MP4) — then emits metadata reports (XML), side logs, and can
-move/rename files based on the results. The command line, namespaces, argument names, aliases and
-output formats mirror the original 1:1.
-
-```
-avdump3 --Consumers=ED2K,CRC32 --PrintHashes video.mkv
-avdump3 -R --Cons=ED2K,MKV --Reports=AVD3 --RDir=out /media
-avdump3 --Consumers            # list consumers
-avdump3 --Help                 # full, coloured help; --Help=<NameSpace> for one namespace
-```
-
-## Building
+## Install
 
 ```
-cargo build --release          # binary: target/release/avdump3
-cargo test --release           # unit + end-to-end tests
+cargo install avdumpr                                        # crates.io
+docker run --rm -v "$PWD:/data" ghcr.io/sandwichfarm/avdumpr --Cons=ED2K,CRC32 --PrintHashes video.mkv
 ```
 
-No native build steps and no runtime dependencies: all hash algorithms are pure Rust (RustCrypto +
-crc32fast/crc32c), media metadata comes from the pure-Rust `mediainfo` crate, and the mirrored buffer
-uses `memfd_create`/`mmap` on Linux (shm on other unixes, a copy-on-wrap buffer elsewhere).
+Prebuilt binaries (Linux, macOS, Windows) are on the [releases page](https://github.com/sandwichfarm/avdump-rust/releases).
+Docker: `/data` is the working directory; mount `:ro` unless you write reports/logs, add
+`--user "$(id -u):$(id -g)"` to keep file ownership, `-it` for the live progress display.
 
-### MediaInfo
+## Use
 
-The `MediaInfoLibProvider` and the `MediaInfoXml` report are backed by
-[mediainfo-rust](https://github.com/sandwichfarm/mediainfo-rust), a pure-Rust reimplementation of
-MediaInfoLib compiled into the binary. Nothing has to be installed at runtime and `--Version` reports
-the embedded version. The provider reads the same field names as before (`Format`, `Width`,
-`FrameRate`, `Chapters_Pos_Begin`, …), so reports keep their shape.
+```
+avdumpr --Consumers=ED2K,CRC32 --PrintHashes video.mkv
+avdumpr -R --Cons=ED2K,MKV --Reports=AVD3 --RDir=out /media
+avdumpr --Consumers            # list consumers
+avdumpr --Help                 # full help; --Help=<NameSpace> for one namespace
+```
 
-The crate is a git dependency pinned to a revision (`Cargo.toml`); it is fetched over SSH with the
-system `git` (`.cargo/config.toml` sets `net.git-fetch-with-cli`), so building needs read access to
-that repository.
+## Benchmark
+
+Wall-clock per file for `--Cons=ED2K,CRC32,MD5,SHA1,TTH,MKV,MP4 --Reports=AVD3`, median of 5
+warm-cache runs, i7-11700K (8 cores), Linux. The original is AVDump3CL built for .NET 8 with its
+native hash library and MediaInfoLib 20.08. `scripts/bench.sh` reproduces the table.
+
+| File | Size | AVDump3 (C#, .NET 8) | avdumpr | Speed-up |
+|---|---|---|---|---|
+| HandBrake MKV (AVC + AAC) | 34 MB | 1299 ms | 559 ms | 2.3× |
+| 2 min 720p MKV (AVC + AAC) | 122 MB | 1716 ms | 748 ms | 2.3× |
+| MP4 (AVC + AAC) | 75 MB | 1142 ms | 511 ms | 2.2× |
+| Random data (hashing only) | 1 GiB | 2343 ms | 1892 ms | 1.2× |
+
+## Develop
+
+```
+cargo build --release          # target/release/avdumpr
+cargo test --release
+docker build --ssh default -t avdumpr .   # needs SSH read access to mediainfo-rust (private)
+```
+
+`mediainfo-rust` is a git dependency pinned by revision (fetched over SSH, see `.cargo/config.toml`).
+Releases: push a `vX.Y.Z` tag — CI publishes to crates.io, GHCR and the releases page.
+Secrets (`CARGO_REGISTRY_TOKEN`, `MEDIAINFO_RUST_DEPLOY_KEY`): run `scripts/setup-secrets.sh`.
 
 ## Command line
 
@@ -53,7 +66,7 @@ arguments from a file (one per line, `//` comments). `PRINTARGS` echoes the pars
 | Diagnostics | `--Version`, `--SaveErrors`, `--SkipEnvironmentElement`, `--IncludePersonalData`, `--PrintDiscoveredFiles`, `--ErrorDirectory`, `--NullStreamTest` |
 | Display | `--HideBuffers`, `--HideFileProgress`, `--HideTotalProgress`, `--ShowDisplayJitter`, `--ForwardConsoleCursorOnly` |
 
-Run `avdump3 --Help` for descriptions, examples and defaults.
+Run `avdumpr --Help` for descriptions, examples and defaults.
 
 ### Consumers
 
@@ -90,3 +103,13 @@ only) `ReportName`, `ReportFileExtension`.
 ## License
 
 MIT, like the original (see LICENSE).
+
+## Releasing
+
+Tag the commit as `vX.Y.Z` (matching `Cargo.toml`) and push the tag: the `Release` workflow runs the
+tests, publishes `avdumpr` to crates.io (`CARGO_REGISTRY_TOKEN` secret) and attaches Linux, macOS and
+Windows binaries to the GitHub release. `cargo publish` uses the crates.io release of `mediainfo-rust`
+pinned in `Cargo.toml`, so that crate has to be published first. CI needs read access to the
+mediainfo-rust repository while it is private (`MEDIAINFO_RUST_DEPLOY_KEY` secret).
+`scripts/setup-secrets.sh` prompts for both secrets and sets them with `gh` (it can also generate the
+deploy key pair and register it on the mediainfo-rust repository).
